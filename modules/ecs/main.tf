@@ -1,0 +1,79 @@
+# 1. ECS Cluster
+resource "aws_ecs_cluster" "this" {
+  name = "${var.environment}-ecs-cluster"
+}
+
+# 2. IAM Role for ECS Task Execution
+resource "aws_iam_role" "ecs_execution_role" {
+  name = "${var.environment}-ecs-execution-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_execution" {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# 3. Security Group for ECS Task
+resource "aws_security_group" "ecs_sg" {
+  name        = "${var.environment}-ecs-sg"
+  description = "Allow inbound HTTP traffic"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# 4. ECS Task Definition (Deploys lightweight nginx container)
+resource "aws_ecs_task_definition" "app" {
+  family                   = "${var.environment}-app-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+
+  container_definitions = jsonencode([{
+    name      = "web-app"
+    image     = "nginx:latest"
+    essential = true
+    portMappings = [{
+      containerPort = 80
+      hostPort      = 80
+    }]
+  }])
+}
+
+# 5. ECS Fargate Service
+resource "aws_ecs_service" "app" {
+  name            = "${var.environment}-ecs-service"
+  cluster         = aws_ecs_cluster.this.id
+  task_definition = aws_ecs_task_definition.app.arn
+  launch_type     = "FARGATE"
+  desired_count   = 1
+
+  network_configuration {
+    subnets          = [var.public_subnet_id]
+    security_groups  = [aws_security_group.ecs_sg.id]
+    assign_public_ip = true
+  }
+}

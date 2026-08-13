@@ -1,0 +1,22 @@
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files (contain raw secrets)
+*.tfstate
+*.tfstate.*
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Exclude sensitive tfvars
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI local configuration records
+.terraformrc
+terraform.rc
