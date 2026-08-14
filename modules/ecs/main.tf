@@ -5,7 +5,7 @@ resource "aws_ecs_cluster" "this" {
 
 # 2. IAM Role for ECS Task Execution
 resource "aws_iam_role" "ecs_execution_role" {
-  name = "${var.environment}-ecs-execution-role"
+  name_prefix = "${var.environment}-ecs-role-"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -24,7 +24,7 @@ resource "aws_iam_role_policy_attachment" "ecs_execution" {
 
 # 3. Security Group for ECS Task
 resource "aws_security_group" "ecs_sg" {
-  name        = "${var.environment}-ecs-sg"
+  name_prefix = "${var.environment}-ecs-sg-"
   description = "Allow inbound HTTP traffic"
   vpc_id      = var.vpc_id
 
@@ -43,7 +43,7 @@ resource "aws_security_group" "ecs_sg" {
   }
 }
 
-# 4. ECS Task Definition (Deploys lightweight nginx container)
+# 4. ECS Task Definition
 resource "aws_ecs_task_definition" "app" {
   family                   = "${var.environment}-app-task"
   network_mode             = "awsvpc"

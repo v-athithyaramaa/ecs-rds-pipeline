@@ -1,16 +1,20 @@
-# 1. DB Subnet Group
+# 1. DB Subnet Group (Using name_prefix prevents collision)
 resource "aws_db_subnet_group" "this" {
-  name       = "${var.environment}-db-subnet-group"
-  subnet_ids = var.private_subnet_ids
+  name_prefix = "${var.environment}-db-subgrp-"
+  subnet_ids  = var.private_subnet_ids
 
   tags = {
     Name = "${var.environment}-db-subnet-group"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
 # 2. Security Group for RDS
 resource "aws_security_group" "rds_sg" {
-  name        = "${var.environment}-rds-sg"
+  name_prefix = "${var.environment}-rds-sg-"
   description = "Allow inbound traffic from within VPC"
   vpc_id      = var.vpc_id
 
@@ -18,7 +22,7 @@ resource "aws_security_group" "rds_sg" {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/16"] # Restricted to internal VPC traffic
+    cidr_blocks = ["10.0.0.0/16"]
   }
 
   egress {
@@ -29,9 +33,9 @@ resource "aws_security_group" "rds_sg" {
   }
 }
 
-# 3. Micro RDS PostgreSQL Instance (Free Tier Sized)
+# 3. Micro RDS PostgreSQL Instance
 resource "aws_db_instance" "postgres" {
-  identifier             = "${var.environment}-postgres-db"
+  identifier_prefix      = "${var.environment}-postgres-"
   allocated_storage      = 20
   max_allocated_storage  = 20
   engine                 = "postgres"
