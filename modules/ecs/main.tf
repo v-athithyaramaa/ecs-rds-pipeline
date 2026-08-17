@@ -3,7 +3,7 @@ resource "aws_ecs_cluster" "this" {
   name = "${var.environment}-ecs-cluster"
 }
 
-# 2. IAM Role for ECS Task Execution
+# 2. IAM Execution Role for ECS Tasks (using name_prefix to avoid EntityAlreadyExists)
 resource "aws_iam_role" "ecs_execution_role" {
   name_prefix = "${var.environment}-ecs-role-"
 
@@ -15,6 +15,10 @@ resource "aws_iam_role" "ecs_execution_role" {
       Principal = { Service = "ecs-tasks.amazonaws.com" }
     }]
   })
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_execution" {
@@ -40,6 +44,10 @@ resource "aws_security_group" "ecs_sg" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -75,5 +83,9 @@ resource "aws_ecs_service" "app" {
     subnets          = [var.public_subnet_id]
     security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
+  }
+
+  lifecycle {
+    ignore_changes = [desired_count]
   }
 }
