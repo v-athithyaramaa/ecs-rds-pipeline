@@ -73,7 +73,7 @@ resource "aws_ecs_task_definition" "app" {
 
 # 5. ECS Fargate Service
 resource "aws_ecs_service" "app" {
-  name            = "${var.environment}-ecs-service"
+  name            = "${var.environment}-service" # Changed to avoid collision with old 'dev-ecs-service'
   cluster         = aws_ecs_cluster.this.id
   task_definition = aws_ecs_task_definition.app.arn
   launch_type     = "FARGATE"
